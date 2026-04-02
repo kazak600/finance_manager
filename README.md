@@ -135,3 +135,62 @@ npm run typecheck
   }
 }
 ```
+
+## QA перед деплоєм
+
+Запуск з кореня проєкту:
+
+```bash
+npm run qa
+```
+
+Команда виконує:
+- lint frontend (`eslint`)
+- production build frontend (`vite build`)
+- typecheck backend (`tsc --noEmit`)
+
+## Деплой на Cloudflare Workers (API)
+
+1. Переконайся, що в `wrangler.toml` вказаний реальний `database_id`.
+2. Задай production secret для JWT:
+
+```bash
+npx wrangler secret put JWT_SECRET
+```
+
+3. Застосуй міграції у remote D1:
+
+```bash
+npx wrangler d1 migrations apply finance-manager-db --remote --config wrangler.toml
+```
+
+4. Деплой API:
+
+```bash
+npm run deploy:worker
+```
+
+## Деплой на Cloudflare Pages (frontend)
+
+### Варіант A: через Dashboard (рекомендовано)
+
+1. Створи Pages project `finance-manager` і підключи репозиторій.
+2. Build command: `npm run build --workspace frontend`
+3. Build output directory: `frontend/dist`
+4. Додай змінну середовища `VITE_API_BASE_URL` (URL Worker API).
+
+### Варіант B: через CLI
+
+```bash
+npm run deploy:pages
+```
+
+Ця команда збирає frontend і публікує `frontend/dist` у Pages project `finance-manager`.
+
+## Smoke-check після деплою
+
+- `GET /health` повертає `{"ok": true}`.
+- Реєстрація і логін створюють валідну сесію.
+- `GET /transactions?month=YYYY-MM` повертає тільки дані поточного користувача.
+- `GET /stats/month?month=YYYY-MM` і `GET /stats/balance` повертають коректні агрегати.
+- `GET /export/csv?from=YYYY-MM-DD&to=YYYY-MM-DD` завантажує валідний CSV.

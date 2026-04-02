@@ -10,8 +10,12 @@
   "scripts": {
     "dev:frontend": "npm run dev --workspace frontend",
     "dev:backend": "npm run dev --workspace backend",
+    "lint": "npm run lint --workspace frontend",
     "build": "npm run build --workspace frontend",
-    "typecheck": "npm run typecheck --workspace backend"
+    "typecheck": "npm run typecheck --workspace backend",
+    "qa": "npm run lint && npm run build && npm run typecheck",
+    "deploy:worker": "npm run deploy --workspace backend",
+    "deploy:pages": "npm run build --workspace frontend && wrangler pages deploy frontend/dist --project-name finance-manager"
   },
   "keywords": [
     "finance-manager",
