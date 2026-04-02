@@ -60,6 +60,29 @@ type TransactionPayload = {
   type?: TransactionType
 }
 
+type RecurringTemplateRecord = {
+  id: number
+  user_id: number
+  name: string
+  amount: number
+  category: string
+  description: string | null
+  type: TransactionType
+  day_of_month: number
+  is_active: number
+  created_at: string
+}
+
+type RecurringTemplatePayload = {
+  name?: string
+  amount?: number
+  category?: string
+  description?: string | null
+  type?: TransactionType
+  dayOfMonth?: number
+  isActive?: boolean
+}
+
 const ACCESS_TOKEN_COOKIE = 'fm_access_token'
 const ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7
 const PBKDF2_ITERATIONS = 210_000
@@ -321,6 +344,73 @@ const parseAndValidateTransactionPayload = (
     },
   }
 }
+
+const parseAndValidateRecurringTemplatePayload = (
+  body: RecurringTemplatePayload | null,
+): {
+  data: {
+    name: string
+    amount: number
+    category: string
+    description: string | null
+    type: TransactionType
+    dayOfMonth: number
+    isActive: boolean
+  }
+} | { error: string } => {
+  const name = body?.name?.trim()
+  const amount = body?.amount
+  const category = body?.category?.trim()
+  const type = body?.type
+  const dayOfMonth = body?.dayOfMonth
+  const isActive = body?.isActive ?? true
+  const descriptionRaw = typeof body?.description === 'string' ? body.description.trim() : null
+  const description = descriptionRaw ? descriptionRaw.slice(0, 500) : null
+
+  if (!name || name.length > 100) {
+    return { error: 'Invalid payload. "name" is required and must be <= 100 chars.' }
+  }
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+    return { error: 'Invalid payload. "amount" must be a positive number.' }
+  }
+  if (!category || category.length > 100) {
+    return { error: 'Invalid payload. "category" is required and must be <= 100 chars.' }
+  }
+  if (type !== 'expense' && type !== 'income') {
+    return { error: 'Invalid payload. "type" must be either "expense" or "income".' }
+  }
+  if (typeof dayOfMonth !== 'number' || !Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+    return { error: 'Invalid payload. "dayOfMonth" must be an integer between 1 and 31.' }
+  }
+  if (typeof isActive !== 'boolean') {
+    return { error: 'Invalid payload. "isActive" must be a boolean.' }
+  }
+
+  return {
+    data: {
+      name,
+      amount,
+      category,
+      description,
+      type,
+      dayOfMonth,
+      isActive,
+    },
+  }
+}
+
+const serializeTemplate = (template: RecurringTemplateRecord) => ({
+  id: template.id,
+  userId: template.user_id,
+  name: template.name,
+  amount: template.amount,
+  category: template.category,
+  description: template.description,
+  type: template.type,
+  dayOfMonth: template.day_of_month,
+  isActive: template.is_active === 1,
+  createdAt: template.created_at,
+})
 
 const readAuthToken = (c: Parameters<MiddlewareHandler<AppContext>>[0]): string | null => {
   const fromCookie = getCookie(c, ACCESS_TOKEN_COOKIE)
@@ -736,6 +826,203 @@ app.get('/stats/balance', async (c) => {
       balance: totalIncome - totalExpense,
     },
   })
+})
+
+app.get('/templates', async (c) => {
+  const userId = c.get('userId')
+  const rows = await c.env.DB.prepare(
+    `
+      SELECT id, user_id, name, amount, category, description, type, day_of_month, is_active, created_at
+      FROM recurring_templates
+      WHERE user_id = ?
+      ORDER BY created_at DESC, id DESC
+    `,
+  )
+    .bind(userId)
+    .all<RecurringTemplateRecord>()
+
+  return c.json({
+    templates: (rows.results ?? []).map(serializeTemplate),
+  })
+})
+
+app.post('/templates', async (c) => {
+  const userId = c.get('userId')
+  const body = await c.req.json<RecurringTemplatePayload>().catch(() => null)
+  const parsed = parseAndValidateRecurringTemplatePayload(body)
+  if ('error' in parsed) {
+    return c.json({ error: parsed.error }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    `
+      INSERT INTO recurring_templates (user_id, name, amount, category, description, type, day_of_month, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+  )
+    .bind(
+      userId,
+      parsed.data.name,
+      parsed.data.amount,
+      parsed.data.category,
+      parsed.data.description,
+      parsed.data.type,
+      parsed.data.dayOfMonth,
+      parsed.data.isActive ? 1 : 0,
+    )
+    .run()
+
+  const createdId = Number(result.meta.last_row_id)
+  const created = await c.env.DB.prepare(
+    `
+      SELECT id, user_id, name, amount, category, description, type, day_of_month, is_active, created_at
+      FROM recurring_templates
+      WHERE id = ? AND user_id = ?
+      LIMIT 1
+    `,
+  )
+    .bind(createdId, userId)
+    .first<RecurringTemplateRecord>()
+
+  return c.json({ template: created ? serializeTemplate(created) : null }, 201)
+})
+
+app.put('/templates/:id', async (c) => {
+  const userId = c.get('userId')
+  const id = Number(c.req.param('id'))
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: 'Template id must be a positive integer.' }, 400)
+  }
+
+  const body = await c.req.json<RecurringTemplatePayload>().catch(() => null)
+  const parsed = parseAndValidateRecurringTemplatePayload(body)
+  if ('error' in parsed) {
+    return c.json({ error: parsed.error }, 400)
+  }
+
+  const existing = await c.env.DB.prepare(
+    'SELECT id FROM recurring_templates WHERE id = ? AND user_id = ? LIMIT 1',
+  )
+    .bind(id, userId)
+    .first<{ id: number }>()
+  if (!existing) {
+    return c.json({ error: 'Template not found.' }, 404)
+  }
+
+  await c.env.DB.prepare(
+    `
+      UPDATE recurring_templates
+      SET name = ?, amount = ?, category = ?, description = ?, type = ?, day_of_month = ?, is_active = ?
+      WHERE id = ? AND user_id = ?
+    `,
+  )
+    .bind(
+      parsed.data.name,
+      parsed.data.amount,
+      parsed.data.category,
+      parsed.data.description,
+      parsed.data.type,
+      parsed.data.dayOfMonth,
+      parsed.data.isActive ? 1 : 0,
+      id,
+      userId,
+    )
+    .run()
+
+  const updated = await c.env.DB.prepare(
+    `
+      SELECT id, user_id, name, amount, category, description, type, day_of_month, is_active, created_at
+      FROM recurring_templates
+      WHERE id = ? AND user_id = ?
+      LIMIT 1
+    `,
+  )
+    .bind(id, userId)
+    .first<RecurringTemplateRecord>()
+
+  return c.json({ template: updated ? serializeTemplate(updated) : null })
+})
+
+app.delete('/templates/:id', async (c) => {
+  const userId = c.get('userId')
+  const id = Number(c.req.param('id'))
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: 'Template id must be a positive integer.' }, 400)
+  }
+
+  const result = await c.env.DB.prepare('DELETE FROM recurring_templates WHERE id = ? AND user_id = ?')
+    .bind(id, userId)
+    .run()
+  if ((result.meta.changes ?? 0) === 0) {
+    return c.json({ error: 'Template not found.' }, 404)
+  }
+
+  return c.json({ ok: true })
+})
+
+app.post('/templates/:id/create-transaction', async (c) => {
+  const userId = c.get('userId')
+  const id = Number(c.req.param('id'))
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: 'Template id must be a positive integer.' }, 400)
+  }
+
+  const template = await c.env.DB.prepare(
+    `
+      SELECT id, user_id, name, amount, category, description, type, day_of_month, is_active, created_at
+      FROM recurring_templates
+      WHERE id = ? AND user_id = ?
+      LIMIT 1
+    `,
+  )
+    .bind(id, userId)
+    .first<RecurringTemplateRecord>()
+
+  if (!template) {
+    return c.json({ error: 'Template not found.' }, 404)
+  }
+  if (template.is_active !== 1) {
+    return c.json({ error: 'Template is inactive.' }, 400)
+  }
+
+  const body = await c.req.json<{ date?: string }>().catch(() => null)
+  const requestedDate = body?.date?.trim()
+  const generatedDate = requestedDate ?? new Date().toISOString().slice(0, 10)
+  const dateTs = parseIsoDateToUnixSeconds(generatedDate)
+  if (dateTs === null) {
+    return c.json({ error: 'Invalid payload. "date" must be a valid YYYY-MM-DD string.' }, 400)
+  }
+
+  const txId = crypto.randomUUID()
+  await c.env.DB.prepare(
+    `
+      INSERT INTO transactions (id, user_id, amount, category, date_ts, description, type)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+  )
+    .bind(
+      txId,
+      userId,
+      template.amount,
+      template.category,
+      dateTs,
+      template.description,
+      template.type,
+    )
+    .run()
+
+  const created = await c.env.DB.prepare(
+    `
+      SELECT id, user_id, amount, category, date_ts, description, type, created_at, updated_at
+      FROM transactions
+      WHERE id = ? AND user_id = ?
+      LIMIT 1
+    `,
+  )
+    .bind(txId, userId)
+    .first<TransactionRecord>()
+
+  return c.json({ transaction: created ? serializeTransaction(created) : null }, 201)
 })
 
 export default app
