@@ -1,4 +1,5 @@
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import { cors } from 'hono/cors'
 import { Hono } from 'hono'
 import type { MiddlewareHandler } from 'hono'
 
@@ -89,6 +90,26 @@ const PBKDF2_ITERATIONS = 210_000
 const PBKDF2_KEY_BITS = 256
 
 const app = new Hono<AppContext>()
+
+app.use(
+  '*',
+  cors({
+    origin: (origin) => {
+      if (!origin) return ''
+      if (
+        origin === 'http://localhost:5173' ||
+        origin.endsWith('.pages.dev') ||
+        origin.endsWith('.workers.dev')
+      ) {
+        return origin
+      }
+      return ''
+    },
+    allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  }),
+)
 
 const textEncoder = new TextEncoder()
 
