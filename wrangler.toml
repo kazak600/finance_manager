@@ -7,6 +7,7 @@ pages_build_output_dir = "frontend/dist"
 binding = "DB"
 database_name = "finance-manager-db"
 database_id = "2ee620a5-4bf6-4fbd-9cc2-b1c143b92442"
+migrations_dir = "backend/migrations"
 
 [vars]
 JWT_SECRET = "change-me-in-production"
