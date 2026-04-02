@@ -412,6 +412,17 @@ const serializeTemplate = (template: RecurringTemplateRecord) => ({
   createdAt: template.created_at,
 })
 
+const escapeCsvField = (value: string | number | null): string => {
+  if (value === null) {
+    return ''
+  }
+  const stringValue = String(value)
+  if (/[",\n]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`
+  }
+  return stringValue
+}
+
 const readAuthToken = (c: Parameters<MiddlewareHandler<AppContext>>[0]): string | null => {
   const fromCookie = getCookie(c, ACCESS_TOKEN_COOKIE)
   if (fromCookie) {
@@ -826,6 +837,60 @@ app.get('/stats/balance', async (c) => {
       balance: totalIncome - totalExpense,
     },
   })
+})
+
+app.get('/export/csv', async (c) => {
+  const userId = c.get('userId')
+  const from = c.req.query('from')
+  const to = c.req.query('to')
+  if (!from || !to) {
+    return c.json({ error: 'Query params "from" and "to" are required (YYYY-MM-DD).' }, 400)
+  }
+
+  const fromTs = parseIsoDateToUnixSeconds(from)
+  const toTs = parseIsoDateToUnixSeconds(to)
+  if (fromTs === null || toTs === null) {
+    return c.json({ error: 'Invalid date format. Use YYYY-MM-DD for both "from" and "to".' }, 400)
+  }
+  if (fromTs > toTs) {
+    return c.json({ error: '"from" must be earlier than or equal to "to".' }, 400)
+  }
+
+  const rows = await c.env.DB.prepare(
+    `
+      SELECT id, amount, category, date_ts, description, type, created_at, updated_at
+      FROM transactions
+      WHERE user_id = ? AND date_ts >= ? AND date_ts < ?
+      ORDER BY date_ts ASC, created_at ASC
+    `,
+  )
+    .bind(userId, fromTs, toTs + 24 * 60 * 60)
+    .all<Pick<TransactionRecord, 'id' | 'amount' | 'category' | 'date_ts' | 'description' | 'type' | 'created_at' | 'updated_at'>>()
+
+  const header = ['id', 'amount', 'category', 'date', 'description', 'type', 'created_at', 'updated_at']
+  const lines = [header.join(',')]
+
+  for (const tx of rows.results ?? []) {
+    const date = new Date(tx.date_ts * 1000).toISOString().slice(0, 10)
+    lines.push(
+      [
+        escapeCsvField(tx.id),
+        escapeCsvField(tx.amount),
+        escapeCsvField(tx.category),
+        escapeCsvField(date),
+        escapeCsvField(tx.description),
+        escapeCsvField(tx.type),
+        escapeCsvField(tx.created_at),
+        escapeCsvField(tx.updated_at),
+      ].join(','),
+    )
+  }
+
+  const csv = `${lines.join('\n')}\n`
+  const fileName = `transactions-${from}-to-${to}.csv`
+  c.header('Content-Type', 'text/csv; charset=utf-8')
+  c.header('Content-Disposition', `attachment; filename="${fileName}"`)
+  return c.body(csv)
 })
 
 app.get('/templates', async (c) => {

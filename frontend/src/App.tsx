@@ -19,6 +19,17 @@ const todayIso = () => new Date().toISOString().slice(0, 10)
 const monthIso = () => new Date().toISOString().slice(0, 7)
 const toIsoDate = (ts: number) => new Date(ts * 1000).toISOString().slice(0, 10)
 const toMonthKey = (ts: number) => toIsoDate(ts).slice(0, 7)
+const monthRangeIso = (monthKey: string): { from: string; to: string } => {
+  const [yearText, monthText] = monthKey.split('-')
+  const year = Number(yearText)
+  const monthIndex = Number(monthText) - 1
+  const firstDay = new Date(Date.UTC(year, monthIndex, 1))
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0))
+  return {
+    from: firstDay.toISOString().slice(0, 10),
+    to: lastDay.toISOString().slice(0, 10),
+  }
+}
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -361,6 +372,41 @@ function App() {
     await refreshData(month, date)
   }
 
+  const exportCsv = async () => {
+    setIsBusy(true)
+    setError('')
+    try {
+      const range = monthRangeIso(month)
+      const response = await fetch(`${API_BASE}/export/csv?from=${range.from}&to=${range.to}`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        const message = typeof body.error === 'string' ? body.error : 'Failed to export CSV'
+        throw new Error(message)
+      }
+
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const fileNameMatch = contentDisposition?.match(/filename="([^"]+)"/)
+      const fileName = fileNameMatch?.[1] ?? `transactions-${range.from}-to-${range.to}.csv`
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export CSV')
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   if (!user) {
     return (
       <AuthForm
@@ -384,6 +430,7 @@ function App() {
         month={month}
         onMonthChange={(nextMonth) => void changeMonth(nextMonth)}
         onCreateTransaction={() => openCreateTx()}
+        onExportCsv={() => void exportCsv()}
         onLogout={() => void logout()}
       />
 

@@ -3,10 +3,11 @@ type Props = {
   month: string
   onMonthChange: (month: string) => void
   onCreateTransaction: () => void
+  onExportCsv: () => void
   onLogout: () => void
 }
 
-export function DashboardHeader({ email, month, onMonthChange, onCreateTransaction, onLogout }: Props) {
+export function DashboardHeader({ email, month, onMonthChange, onCreateTransaction, onExportCsv, onLogout }: Props) {
   return (
     <header className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
       <div>
@@ -22,6 +23,9 @@ export function DashboardHeader({ email, month, onMonthChange, onCreateTransacti
         />
         <button className="rounded bg-slate-200 px-3 py-2 text-sm" onClick={onCreateTransaction}>
           + Transaction
+        </button>
+        <button className="rounded bg-emerald-600 px-3 py-2 text-sm text-white" onClick={onExportCsv}>
+          Export CSV
         </button>
         <button className="rounded bg-slate-900 px-3 py-2 text-sm text-white" onClick={onLogout}>
           Logout
