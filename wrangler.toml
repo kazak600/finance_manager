@@ -1,0 +1,11 @@
+name = "finance-manager-api"
+main = "backend/src/index.ts"
+compatibility_date = "2026-04-02"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "finance-manager-db"
+database_id = "TODO_REPLACE_IN_CLOUDFLARE"
+
+[vars]
+JWT_SECRET = "change-me-in-production"

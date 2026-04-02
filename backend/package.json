@@ -1,0 +1,25 @@
+{
+  "name": "@finance-manager/backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --config ../wrangler.toml",
+    "deploy": "wrangler deploy --config ../wrangler.toml",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "cloudflare-worker",
+    "hono"
+  ],
+  "license": "MIT",
+  "description": "Finance Manager API on Cloudflare Workers",
+  "dependencies": {
+    "hono": "^4.12.10"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260402.1",
+    "typescript": "^6.0.2",
+    "wrangler": "^4.79.0"
+  }
+}

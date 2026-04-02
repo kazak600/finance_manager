@@ -1,0 +1,23 @@
+{
+  "name": "finance_manager",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace frontend",
+    "dev:backend": "npm run dev --workspace backend",
+    "build": "npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspace backend"
+  },
+  "keywords": [
+    "finance-manager",
+    "cloudflare-workers",
+    "vite"
+  ],
+  "license": "MIT",
+  "description": "Finance Manager monorepo (frontend + Cloudflare Worker API)"
+}
