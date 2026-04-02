@@ -90,3 +90,48 @@ npm run build
 # перевірка типів backend
 npm run typecheck
 ```
+
+## API: Stats
+
+Усі endpoint-и нижче потребують авторизації (cookie `fm_access_token` або `Authorization: Bearer <token>`).
+
+### `GET /stats/month?month=YYYY-MM`
+
+Повертає місячну зведену статистику:
+- сума доходів
+- сума витрат
+- баланс за місяць
+- суми по категоріях (окремо для `income`/`expense`)
+
+Приклад відповіді:
+
+```json
+{
+  "month": "2026-04",
+  "totals": {
+    "income": 2450,
+    "expense": 1280.5,
+    "balance": 1169.5
+  },
+  "categories": [
+    { "category": "Salary", "type": "income", "total": 2200 },
+    { "category": "Food", "type": "expense", "total": 420.5 }
+  ]
+}
+```
+
+### `GET /stats/balance`
+
+Повертає загальний баланс користувача за всі транзакції.
+
+Приклад відповіді:
+
+```json
+{
+  "totals": {
+    "income": 8120,
+    "expense": 5340.2,
+    "balance": 2779.8
+  }
+}
+```
