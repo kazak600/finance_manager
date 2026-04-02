@@ -10,7 +10,7 @@ type Props = {
 
 export function CalendarGrid({ calendarDays, calendarMap, selectedDate, onPickDay, formatMoney }: Props) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2">
+    <article className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2 dark:border-slate-700 dark:bg-slate-800">
       <h2 className="mb-4 text-lg font-semibold">Календар</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
         {calendarDays.map((date) => {
@@ -20,7 +20,7 @@ export function CalendarGrid({ calendarDays, calendarMap, selectedDate, onPickDa
           return (
             <button
               key={date}
-              className={`rounded border p-2 text-left ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'}`}
+              className={`rounded border p-2 text-left ${selected ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'}`}
               onClick={() => onPickDay(date)}
             >
               <p className="text-sm font-semibold">{day}</p>

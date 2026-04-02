@@ -25,9 +25,9 @@ export function AuthForm({
 }: Props) {
   return (
     <main className="mx-auto min-h-screen max-w-md px-6 py-16">
-      <form onSubmit={(event) => void onSubmit(event)} className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-2 text-2xl font-semibold text-slate-900">Finance Manager</h1>
-        <p className="mb-6 text-sm text-slate-600">Увійдіть або зареєструйтесь, щоб керувати фінансами.</p>
+      <form onSubmit={(event) => void onSubmit(event)} className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <h1 className="mb-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Finance Manager</h1>
+        <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">Увійдіть або зареєструйтесь, щоб керувати фінансами.</p>
         <div className="mb-4 flex gap-2">
           <button
             type="button"
@@ -46,7 +46,7 @@ export function AuthForm({
         </div>
         <div className="space-y-3">
           <input
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             type="email"
             placeholder="email@example.com"
             value={authEmail}
@@ -54,7 +54,7 @@ export function AuthForm({
             required
           />
           <input
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             type="password"
             placeholder="password"
             value={authPassword}

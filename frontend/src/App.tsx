@@ -14,6 +14,12 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 const CATEGORIES = ['Їжа', 'Транспорт', 'Житло', 'Розваги', "Здоров'я", 'Подарунки', 'Дохід', 'Інше']
 const moneyFmt = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' })
 const dateFmt = new Intl.DateTimeFormat('lv-LV')
+const THEME_STORAGE_KEY = 'finance-manager-theme'
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 const monthIso = () => new Date().toISOString().slice(0, 7)
@@ -56,6 +62,8 @@ function App() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [isBusy, setIsBusy] = useState(false)
   const [error, setError] = useState('')
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) === 'dark')
+  const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [authEmail, setAuthEmail] = useState('')
@@ -140,6 +148,31 @@ function App() {
   useEffect(() => {
     void bootstrap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('dark', isDarkMode)
+    localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light')
+  }, [isDarkMode])
+
+  useEffect(() => {
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPromptEvent(event as BeforeInstallPromptEvent)
+    }
+
+    const onAppInstalled = () => {
+      setInstallPromptEvent(null)
+    }
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.addEventListener('appinstalled', onAppInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', onAppInstalled)
+    }
   }, [])
 
   const refreshData = async (nextMonth = month, nextDate = selectedDate) => {
@@ -407,6 +440,13 @@ function App() {
     }
   }
 
+  const installPwa = async () => {
+    if (!installPromptEvent) return
+    await installPromptEvent.prompt()
+    await installPromptEvent.userChoice
+    setInstallPromptEvent(null)
+  }
+
   if (!user) {
     return (
       <AuthForm
@@ -424,17 +464,21 @@ function App() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 md:px-6">
+    <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 text-slate-900 md:px-6 dark:text-slate-100">
       <DashboardHeader
         email={user.email}
         month={month}
+        isDarkMode={isDarkMode}
+        canInstallPwa={Boolean(installPromptEvent)}
         onMonthChange={(nextMonth) => void changeMonth(nextMonth)}
         onCreateTransaction={() => openCreateTx()}
         onExportCsv={() => void exportCsv()}
+        onToggleDarkMode={() => setIsDarkMode((current) => !current)}
+        onInstallPwa={() => void installPwa()}
         onLogout={() => void logout()}
       />
 
-      {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/50 dark:bg-red-900/30 dark:text-red-200">{error}</p>}
 
       <section className="mb-6 grid gap-4 md:grid-cols-3">
         <BalanceCard
@@ -486,8 +530,8 @@ function App() {
         onTxFormChange={setTxForm}
       />
 
-      {isBusy && <p className="mt-4 text-sm text-slate-500">Оновлення даних...</p>}
-      <p className="mt-4 text-xs text-slate-400">Поточний місяць: {toMonthKey(Date.now() / 1000)}</p>
+      {isBusy && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Оновлення даних...</p>}
+      <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">Поточний місяць: {toMonthKey(Date.now() / 1000)}</p>
     </main>
   )
 }
