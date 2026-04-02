@@ -86,7 +86,7 @@ type RecurringTemplatePayload = {
 
 const ACCESS_TOKEN_COOKIE = 'fm_access_token'
 const ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7
-const PBKDF2_ITERATIONS = 210_000
+const PBKDF2_ITERATIONS = 10_000
 const PBKDF2_KEY_BITS = 256
 
 const app = new Hono<AppContext>()
@@ -235,7 +235,7 @@ const verifyPassword = async (password: string, storedHash: string): Promise<boo
     return false
   }
   const iterations = Number(iterationsText)
-  if (!Number.isFinite(iterations) || iterations < 100_000) {
+  if (!Number.isFinite(iterations) || iterations < 10_000) {
     return false
   }
 
