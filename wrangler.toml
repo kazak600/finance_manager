@@ -1,6 +1,7 @@
 name = "finance-manager"
 main = "backend/src/index.ts"
 compatibility_date = "2026-04-02"
+pages_build_output_dir = "frontend/dist"
 
 [[d1_databases]]
 binding = "DB"
