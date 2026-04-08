@@ -18,7 +18,10 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') {
+  const url = new URL(event.request.url)
+
+  // Do not cache API requests
+  if (event.request.method !== 'GET' || url.pathname.startsWith('/auth/') || url.search.includes('month=') || url.pathname.includes('/stats/')) {
     return
   }
 

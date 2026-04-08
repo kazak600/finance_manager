@@ -15,6 +15,7 @@ const CATEGORIES = ['Їжа', 'Транспорт', 'Житло', 'Розваг�
 const moneyFmt = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' })
 const dateFmt = new Intl.DateTimeFormat('lv-LV')
 const THEME_STORAGE_KEY = 'finance-manager-theme'
+const AUTH_TOKEN_KEY = 'fm_access_token'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -38,9 +39,19 @@ const monthRangeIso = (monthKey: string): { from: string; to: string } => {
 }
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY)
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    ...(options?.headers ?? {}),
+  })
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
+    headers,
     ...options,
   })
   const body = await response.json().catch(() => ({}))
@@ -139,6 +150,7 @@ function App() {
       setUser(me.user)
       await loadDashboard(month, selectedDate)
     } catch {
+      localStorage.removeItem(AUTH_TOKEN_KEY)
       setUser(null)
     } finally {
       setIsBusy(false)
@@ -176,7 +188,8 @@ function App() {
   }, [])
 
   const refreshData = async (nextMonth = month, nextDate = selectedDate) => {
-    if (!user) return
+    const token = localStorage.getItem(AUTH_TOKEN_KEY)
+    if (!user && !token) return
     setIsBusy(true)
     setError('')
     try {
@@ -193,10 +206,13 @@ function App() {
     setIsBusy(true)
     setError('')
     try {
-      const res = await apiRequest<{ user: User }>(`/auth/${authMode}`, {
+      const res = await apiRequest<{ user: User; token: string }>(`/auth/${authMode}`, {
         method: 'POST',
         body: JSON.stringify({ email: authEmail, password: authPassword }),
       })
+      if (res.token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, res.token)
+      }
       setUser(res.user)
       await loadDashboard(month, selectedDate)
       setAuthEmail('')
@@ -213,15 +229,16 @@ function App() {
     setError('')
     try {
       await apiRequest('/auth/logout', { method: 'POST' })
+    } catch (err) {
+      console.error('Logout error:', err)
+    } finally {
+      localStorage.removeItem(AUTH_TOKEN_KEY)
       setUser(null)
       setTransactions([])
       setDayTransactions([])
       setStats(null)
       setBalance(null)
       setTemplates([])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Logout failed')
-    } finally {
       setIsBusy(false)
     }
   }
@@ -410,9 +427,18 @@ function App() {
     setError('')
     try {
       const range = monthRangeIso(month)
+      const token = localStorage.getItem(AUTH_TOKEN_KEY)
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch(`${API_BASE}/export/csv?from=${range.from}&to=${range.to}`, {
         method: 'GET',
         credentials: 'include',
+        headers
       })
 
       if (!response.ok) {

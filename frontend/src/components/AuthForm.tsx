@@ -32,16 +32,24 @@ export function AuthForm({
           <button
             type="button"
             onClick={() => onAuthModeChange('login')}
-            className={`rounded px-3 py-2 text-sm ${authMode === 'login' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
+            className={`rounded px-3 py-2 text-sm transition-colors ${
+              authMode === 'login' 
+                ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' 
+                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+            }`}
           >
-            Login
+            Увійти
           </button>
           <button
             type="button"
             onClick={() => onAuthModeChange('register')}
-            className={`rounded px-3 py-2 text-sm ${authMode === 'register' ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}
+            className={`rounded px-3 py-2 text-sm transition-colors ${
+              authMode === 'register' 
+                ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' 
+                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+            }`}
           >
-            Register
+            Реєстрація
           </button>
         </div>
         <div className="space-y-3">

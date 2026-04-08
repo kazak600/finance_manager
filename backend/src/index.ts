@@ -445,17 +445,18 @@ const escapeCsvField = (value: string | number | null): string => {
 }
 
 const readAuthToken = (c: Parameters<MiddlewareHandler<AppContext>>[0]): string | null => {
+  const authorization = c.req.header('Authorization')
+  if (authorization?.startsWith('Bearer ')) {
+    const token = authorization.slice('Bearer '.length).trim()
+    if (token) return token
+  }
+
   const fromCookie = getCookie(c, ACCESS_TOKEN_COOKIE)
-  if (fromCookie) {
+  if (fromCookie && fromCookie.trim().length > 0) {
     return fromCookie
   }
 
-  const authorization = c.req.header('Authorization')
-  if (!authorization?.startsWith('Bearer ')) {
-    return null
-  }
-  const token = authorization.slice('Bearer '.length).trim()
-  return token || null
+  return null
 }
 
 const authMiddleware: MiddlewareHandler<AppContext> = async (c, next) => {
@@ -530,9 +531,11 @@ app.post('/auth/register', async (c) => {
     c.env.JWT_SECRET,
   )
 
+  const isSecure = c.req.url.startsWith('https://')
+
   setCookie(c, ACCESS_TOKEN_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure: isSecure,
     sameSite: 'Lax',
     path: '/',
     maxAge: ACCESS_TOKEN_TTL_SECONDS,
@@ -576,9 +579,11 @@ app.post('/auth/login', async (c) => {
     c.env.JWT_SECRET,
   )
 
+  const isSecure = c.req.url.startsWith('https://')
+
   setCookie(c, ACCESS_TOKEN_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure: isSecure,
     sameSite: 'Lax',
     path: '/',
     maxAge: ACCESS_TOKEN_TTL_SECONDS,
