@@ -257,7 +257,8 @@ const verifyPassword = async (password: string, storedHash: string): Promise<boo
     passwordKey,
     PBKDF2_KEY_BITS,
   )
-  return timingSafeEqual(toBase64Url(derivedBits), hashEncoded)
+  const derivedHashEncoded = toBase64Url(derivedBits)
+  return timingSafeEqual(derivedHashEncoded, hashEncoded)
 }
 
 const isValidEmail = (email: string): boolean =>
@@ -497,52 +498,6 @@ app.get('/', (c) =>
     version: 'mvp-bootstrap',
   }),
 )
-
-app.post('/auth/register', async (c) => {
-  const body = await c.req.json<{ email?: string; password?: string }>().catch(() => null)
-  const email = body?.email?.trim().toLowerCase()
-  const password = body?.password
-
-  if (!email || !password || !isValidEmail(email) || password.length < 8) {
-    return c.json({ error: 'Invalid payload. Email and password (min 8 chars) are required.' }, 400)
-  }
-
-  const existingUser = await c.env.DB.prepare('SELECT id FROM users WHERE email = ? LIMIT 1')
-    .bind(email)
-    .first<{ id: number }>()
-  if (existingUser) {
-    return c.json({ error: 'Email already in use.' }, 409)
-  }
-
-  const passwordHash = await hashPassword(password)
-  const result = await c.env.DB.prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)')
-    .bind(email, passwordHash)
-    .run()
-
-  const userId = Number(result.meta.last_row_id)
-  const now = Math.floor(Date.now() / 1000)
-  const token = await signJwt(
-    {
-      sub: String(userId),
-      email,
-      iat: now,
-      exp: now + ACCESS_TOKEN_TTL_SECONDS,
-    },
-    c.env.JWT_SECRET,
-  )
-
-  const isSecure = c.req.url.startsWith('https://')
-
-  setCookie(c, ACCESS_TOKEN_COOKIE, token, {
-    httpOnly: true,
-    secure: isSecure,
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: ACCESS_TOKEN_TTL_SECONDS,
-  })
-
-  return c.json({ user: { id: userId, email }, token }, 201)
-})
 
 app.post('/auth/login', async (c) => {
   const body = await c.req.json<{ email?: string; password?: string }>().catch(() => null)

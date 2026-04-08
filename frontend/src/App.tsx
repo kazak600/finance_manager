@@ -76,7 +76,6 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) === 'dark')
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
 
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
 
@@ -206,7 +205,7 @@ function App() {
     setIsBusy(true)
     setError('')
     try {
-      const res = await apiRequest<{ user: User; token: string }>(`/auth/${authMode}`, {
+      const res = await apiRequest<{ user: User; token: string }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: authEmail, password: authPassword }),
       })
@@ -476,12 +475,10 @@ function App() {
   if (!user) {
     return (
       <AuthForm
-        authMode={authMode}
         authEmail={authEmail}
         authPassword={authPassword}
         error={error}
         isBusy={isBusy}
-        onAuthModeChange={setAuthMode}
         onEmailChange={setAuthEmail}
         onPasswordChange={setAuthPassword}
         onSubmit={submitAuth}
