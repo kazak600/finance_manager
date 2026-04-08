@@ -19,9 +19,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
+  const isApiRequest = url.port === '8787' || 
+                       url.pathname.includes('/auth/') || 
+                       url.pathname.includes('/transactions') || 
+                       url.pathname.includes('/stats/') || 
+                       url.pathname.includes('/templates') ||
+                       url.pathname.includes('/export/') ||
+                       url.pathname.includes('/health')
 
-  // Do not cache API requests
-  if (event.request.method !== 'GET' || url.pathname.startsWith('/auth/') || url.search.includes('month=') || url.pathname.includes('/stats/')) {
+  // Do not cache API requests or non-GET requests
+  if (event.request.method !== 'GET' || isApiRequest) {
     return
   }
 
