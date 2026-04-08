@@ -38,7 +38,7 @@ export function AuthForm({
                 : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
             }`}
           >
-            Увійти
+            Login
           </button>
           <button
             type="button"
@@ -49,7 +49,7 @@ export function AuthForm({
                 : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
             }`}
           >
-            Реєстрація
+            Register
           </button>
         </div>
         <div className="space-y-3">
