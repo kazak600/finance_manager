@@ -71,7 +71,14 @@ export function TransactionModal({ show, txForm, categories, onClose, onSubmit, 
               <select
                 className="revo-input font-bold"
                 value={txForm.type}
-                onChange={(e) => onTxFormChange((prev) => ({ ...prev, type: e.target.value as TransactionType }))}
+                onChange={(e) => {
+                  const newType = e.target.value as TransactionType
+                  onTxFormChange((prev) => ({ 
+                    ...prev, 
+                    type: newType,
+                    category: newType === 'income' ? 'Дохід' : prev.category
+                  }))
+                }}
               >
                 <option value="expense">Витрата</option>
                 <option value="income">Дохід</option>
