@@ -5,10 +5,9 @@ type Props = {
   calendarMap: Map<string, DaySummary>
   selectedDate: string
   onPickDay: (date: string) => void
-  formatMoney: (value: number) => string
 }
 
-export function CalendarGrid({ calendarDays, calendarMap, selectedDate, onPickDay, formatMoney }: Props) {
+export function CalendarGrid({ calendarDays, calendarMap, selectedDate, onPickDay }: Props) {
   return (
     <article className="revo-card lg:col-span-2">
       <div className="mb-6 flex items-center justify-between">

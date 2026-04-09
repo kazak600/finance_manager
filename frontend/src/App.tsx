@@ -69,7 +69,6 @@ type BeforeInstallPromptEvent = Event & {
 const todayIso = () => new Date().toISOString().slice(0, 10)
 const monthIso = () => new Date().toISOString().slice(0, 7)
 const toIsoDate = (ts: number) => new Date(ts * 1000).toISOString().slice(0, 10)
-const toMonthKey = (ts: number) => toIsoDate(ts).slice(0, 7)
 const monthRangeIso = (monthKey: string): { from: string; to: string } => {
   const [yearText, monthText] = monthKey.split('-')
   const year = Number(yearText)
@@ -555,7 +554,6 @@ function App() {
             calendarMap={calendarMap}
             selectedDate={selectedDate}
             onPickDay={(date) => void pickDay(date)}
-            formatMoney={(value) => moneyFmt.format(value)}
           />
         </div>
         <div className="lg:col-span-5">
