@@ -10,10 +10,17 @@ export function DashboardHeader({
   onMonthChange,
 }: Props) {
   return (
-    <header className="mb-8 flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-revo-text">Finance</h1>
-        <p className="text-sm font-bold text-revo-gray">{email}</p>
+    <header className="mb-10 flex items-start justify-between">
+      <div className="flex flex-col gap-3">
+        <img 
+          src="/favicon.svg" 
+          alt="Logo" 
+          className="h-12 w-12 rounded-2xl shadow-lg shadow-revo-blue/20" 
+        />
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-revo-blue">Finance</p>
+          <p className="text-xs font-bold text-revo-gray">{email}</p>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

@@ -23,9 +23,11 @@ export function AuthForm({
     <main className="flex min-h-screen items-center justify-center bg-revo-bg px-6">
       <div className="w-full max-w-md revo-card !p-10 shadow-revo-md">
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-revo-blue text-3xl text-white shadow-lg shadow-revo-blue/20">
-            F
-          </div>
+          <img 
+            src="/favicon.svg" 
+            alt="Logo" 
+            className="mx-auto mb-6 h-20 w-20 rounded-3xl shadow-xl shadow-revo-blue/20" 
+          />
           <h1 className="text-3xl font-black tracking-tight text-revo-text">Finance</h1>
           <p className="mt-2 text-sm font-bold text-revo-gray">Твій капітал під контролем</p>
         </div>
