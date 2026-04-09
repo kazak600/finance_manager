@@ -1,4 +1,5 @@
 import type { MonthlyStats } from '../types'
+import { CATEGORY_EMOJIS } from '../App'
 
 type Props = {
   stats: MonthlyStats | null
@@ -7,21 +8,45 @@ type Props = {
 }
 
 export function MonthlyStatsCard({ stats, fallbackMonth, formatMoney }: Props) {
+  const categories = stats?.categories ?? []
+  const maxTotal = Math.max(...categories.map(c => c.total), 1)
+
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 md:col-span-2 dark:border-slate-700 dark:bg-slate-800">
-      <p className="mb-2 text-xs uppercase text-slate-500 dark:text-slate-400">Місячна статистика ({stats?.month ?? fallbackMonth})</p>
-      <div className="mb-3 flex gap-4 text-sm">
-        <span>Доходи: {formatMoney(stats?.totals.income ?? 0)}</span>
-        <span>Витрати: {formatMoney(stats?.totals.expense ?? 0)}</span>
-        <span>Баланс: {formatMoney(stats?.totals.balance ?? 0)}</span>
-      </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {(stats?.categories ?? []).map((item) => (
-          <li key={`${item.type}-${item.category}`} className="rounded bg-slate-50 px-3 py-2 text-sm dark:bg-slate-700/60">
-            <span className="font-medium">{item.category}</span> ({item.type}) - {formatMoney(item.total)}
-          </li>
-        ))}
-      </ul>
+    <article className="revo-card md:col-span-2 shadow-revo-md">
+      <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-revo-gray">
+        Аналітика за {stats?.month ?? fallbackMonth}
+      </p>
+      
+      {categories.length === 0 ? (
+        <p className="py-8 text-center text-revo-gray">Немає даних за цей місяць</p>
+      ) : (
+        <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+          {categories.map((item) => {
+            const emoji = CATEGORY_EMOJIS[item.category] || '📦'
+            const percentage = (item.total / maxTotal) * 100
+            
+            return (
+              <li key={`${item.type}-${item.category}`} className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xl">
+                  {emoji}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="truncate">{item.category}</span>
+                    <span>{formatMoney(item.total)}</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${item.type === 'income' ? 'bg-revo-success' : 'bg-revo-blue'}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </article>
   )
 }

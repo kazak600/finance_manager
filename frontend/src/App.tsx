@@ -11,10 +11,52 @@ import { TransactionModal } from './components/TransactionModal'
 import type { BalanceResponse, MonthlyStats, Template, TemplateFormState, Transaction, TransactionFormState, User } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
-const CATEGORIES = ['Їжа', 'Транспорт', 'Житло', 'Розваги', "Здоров'я", 'Подарунки', 'Дохід', 'Інше']
+const CATEGORIES = [
+  'Їжа', 
+  'Кафе', 
+  'Доставка їжі', 
+  'Транспорт', 
+  'Авто', 
+  'Парковка', 
+  'Житло', 
+  'Діти', 
+  'Комунікації', 
+  'Одяг', 
+  'Здоров\'я', 
+  'Аптека', 
+  'Дім', 
+  'Відпустка', 
+  'Спорт', 
+  'Розваги', 
+  'Подарунки', 
+  'Дохід', 
+  'Інше'
+]
+
+export const CATEGORY_EMOJIS: Record<string, string> = {
+  'Їжа': '🛒',
+  'Кафе': '☕',
+  'Доставка їжі': '🍕',
+  'Транспорт': '🚌',
+  'Авто': '🔧',
+  'Парковка': '🅿️',
+  'Житло': '🏠',
+  'Діти': '👶',
+  'Комунікації': '📱',
+  'Одяг': '👕',
+  'Здоров\'я': '🏥',
+  'Аптека': '💊',
+  'Дім': '🖼️',
+  'Відпустка': '✈️',
+  'Спорт': '🏋️',
+  'Розваги': '🎬',
+  'Подарунки': '🎁',
+  'Дохід': '💰',
+  'Інше': '📦'
+}
+
 const moneyFmt = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' })
 const dateFmt = new Intl.DateTimeFormat('lv-LV')
-const THEME_STORAGE_KEY = 'finance-manager-theme'
 const AUTH_TOKEN_KEY = 'fm_access_token'
 
 type BeforeInstallPromptEvent = Event & {
@@ -73,7 +115,6 @@ function App() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [isBusy, setIsBusy] = useState(false)
   const [error, setError] = useState('')
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) === 'dark')
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
 
   const [authEmail, setAuthEmail] = useState('')
@@ -160,12 +201,6 @@ function App() {
     void bootstrap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    const root = document.documentElement
-    root.classList.toggle('dark', isDarkMode)
-    localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light')
-  }, [isDarkMode])
 
   useEffect(() => {
     const onBeforeInstallPrompt = (event: Event) => {
@@ -487,49 +522,51 @@ function App() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 text-slate-900 md:px-6 dark:text-slate-100">
+    <main className="mx-auto min-h-screen max-w-5xl px-4 py-8 md:px-6">
       <DashboardHeader
         email={user.email}
         month={month}
-        isDarkMode={isDarkMode}
-        canInstallPwa={Boolean(installPromptEvent)}
         onMonthChange={(nextMonth) => void changeMonth(nextMonth)}
-        onCreateTransaction={() => openCreateTx()}
-        onExportCsv={() => void exportCsv()}
-        onToggleDarkMode={() => setIsDarkMode((current) => !current)}
-        onInstallPwa={() => void installPwa()}
-        onLogout={() => void logout()}
       />
 
-      {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/50 dark:bg-red-900/30 dark:text-red-200">{error}</p>}
+      {error && <p className="mb-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-revo-danger">{error}</p>}
 
-      <section className="mb-6 grid gap-4 md:grid-cols-3">
+      <section className="mb-8 grid gap-6 md:grid-cols-2">
         <BalanceCard
           income={balance?.totals.income ?? 0}
           expense={balance?.totals.expense ?? 0}
           balance={balance?.totals.balance ?? 0}
           formatMoney={(value) => moneyFmt.format(value)}
+          onCreateTransaction={() => openCreateTx()}
         />
-        <MonthlyStatsCard stats={stats} fallbackMonth={month} formatMoney={(value) => moneyFmt.format(value)} />
+        <MonthlyStatsCard 
+          stats={stats} 
+          fallbackMonth={month} 
+          formatMoney={(value) => moneyFmt.format(value)} 
+        />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <CalendarGrid
-          calendarDays={calendarDays}
-          calendarMap={calendarMap}
-          selectedDate={selectedDate}
-          onPickDay={(date) => void pickDay(date)}
-          formatMoney={(value) => moneyFmt.format(value)}
-        />
-        <DayTransactionsCard
-          selectedDate={selectedDate}
-          dayTransactions={dayTransactions}
-          onCreateTransaction={() => openCreateTx(selectedDate)}
-          onEditTransaction={openEditTx}
-          formatMoney={(value) => moneyFmt.format(value)}
-          formatDate={(value) => dateFmt.format(value)}
-        />
-      </section>
+      <div className="grid gap-8 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <CalendarGrid
+            calendarDays={calendarDays}
+            calendarMap={calendarMap}
+            selectedDate={selectedDate}
+            onPickDay={(date) => void pickDay(date)}
+            formatMoney={(value) => moneyFmt.format(value)}
+          />
+        </div>
+        <div className="lg:col-span-5">
+          <DayTransactionsCard
+            selectedDate={selectedDate}
+            dayTransactions={dayTransactions}
+            onCreateTransaction={() => openCreateTx(selectedDate)}
+            onEditTransaction={openEditTx}
+            formatMoney={(value) => moneyFmt.format(value)}
+            formatDate={(value) => dateFmt.format(value)}
+          />
+        </div>
+      </div>
 
       <TemplatesSection
         templateForm={templateForm}
@@ -543,6 +580,31 @@ function App() {
         formatMoney={(value) => moneyFmt.format(value)}
       />
 
+      <section className="mt-16 flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 pt-10 pb-16">
+        {installPromptEvent && (
+          <button
+            onClick={() => void installPwa()}
+            className="revo-btn-secondary !py-2 !text-xs !px-5"
+          >
+            Встановити додаток
+          </button>
+        )}
+        
+        <button
+          onClick={() => void exportCsv()}
+          className="revo-btn-secondary !py-2 !text-xs !px-5"
+        >
+          Експорт CSV
+        </button>
+        
+        <button
+          onClick={() => void logout()}
+          className="rounded-full bg-slate-900 px-6 py-2 text-xs font-black uppercase tracking-widest text-white transition-colors hover:bg-black"
+        >
+          Вийти
+        </button>
+      </section>
+
       <TransactionModal
         show={showTxModal}
         txForm={txForm}
@@ -553,8 +615,11 @@ function App() {
         onTxFormChange={setTxForm}
       />
 
-      {isBusy && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Оновлення даних...</p>}
-      <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">Поточний місяць: {toMonthKey(Date.now() / 1000)}</p>
+      {isBusy && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-900 px-6 py-2 text-sm font-medium text-white shadow-lg transition-all">
+          Оновлення даних...
+        </div>
+      )}
     </main>
   )
 }

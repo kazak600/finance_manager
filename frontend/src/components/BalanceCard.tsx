@@ -3,15 +3,40 @@ type Props = {
   expense: number
   balance: number
   formatMoney: (value: number) => string
+  onCreateTransaction: () => void
 }
 
-export function BalanceCard({ income, expense, balance, formatMoney }: Props) {
+export function BalanceCard({ income, expense, balance, formatMoney, onCreateTransaction }: Props) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-      <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Загальний баланс</p>
-      <p className="mt-2 text-2xl font-semibold">{formatMoney(balance)}</p>
-      <p className="mt-1 text-sm text-emerald-700">Доходи: {formatMoney(income)}</p>
-      <p className="text-sm text-rose-700">Витрати: {formatMoney(expense)}</p>
-    </article>
+    <div className="revo-card flex flex-col justify-between overflow-hidden !p-8 shadow-revo-md">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-wider text-revo-gray">Мій баланс</p>
+        <h2 className="mt-1 text-5xl font-black tracking-tighter text-revo-text">
+          {formatMoney(balance)}
+        </h2>
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+        <div className="flex gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase text-revo-success">Доходи</p>
+            <p className="text-lg font-bold text-revo-text">{formatMoney(income)}</p>
+          </div>
+          <div className="h-10 w-px bg-slate-100"></div>
+          <div>
+            <p className="text-[10px] font-bold uppercase text-revo-danger">Витрати</p>
+            <p className="text-lg font-bold text-revo-text">{formatMoney(expense)}</p>
+          </div>
+        </div>
+        
+        <button
+          onClick={onCreateTransaction}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-revo-blue text-2xl text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+          title="Додати транзакцію"
+        >
+          +
+        </button>
+      </div>
+    </div>
   )
 }

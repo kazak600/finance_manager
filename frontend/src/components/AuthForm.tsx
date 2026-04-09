@@ -20,38 +20,60 @@ export function AuthForm({
   onSubmit,
 }: Props) {
   return (
-    <main className="mx-auto min-h-screen max-w-md px-6 py-16">
-      <form onSubmit={(event) => void onSubmit(event)} className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <h1 className="mb-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Finance Manager</h1>
-        <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">Ввійдіть у свій аккаунт.</p>
-        
-        <div className="space-y-3">
-          <input
-            className="w-full rounded border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-            type="email"
-            placeholder="email@example.com"
-            value={authEmail}
-            onChange={(e) => onEmailChange(e.target.value)}
-            required
-          />
-          <input
-            className="w-full rounded border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-            type="password"
-            placeholder="password"
-            value={authPassword}
-            onChange={(e) => onPasswordChange(e.target.value)}
-            required
-          />
+    <main className="flex min-h-screen items-center justify-center bg-revo-bg px-6">
+      <div className="w-full max-w-md revo-card !p-10 shadow-revo-md">
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-revo-blue text-3xl text-white shadow-lg shadow-revo-blue/20">
+            F
+          </div>
+          <h1 className="text-3xl font-black tracking-tight text-revo-text">Finance</h1>
+          <p className="mt-2 text-sm font-bold text-revo-gray">Твій капітал під контролем</p>
         </div>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        <button
-          className="mt-5 w-full rounded bg-emerald-600 px-4 py-2 font-medium text-white disabled:opacity-60"
-          type="submit"
-          disabled={isBusy}
-        >
-          {isBusy ? 'Loading...' : 'Login'}
-        </button>
-      </form>
+
+        <form onSubmit={(event) => void onSubmit(event)} className="space-y-6">
+          <div>
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-revo-gray">Email</label>
+            <input
+              className="revo-input font-bold"
+              type="email"
+              placeholder="email@example.com"
+              value={authEmail}
+              onChange={(e) => onEmailChange(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-revo-gray">Пароль</label>
+            <input
+              className="revo-input font-bold"
+              type="password"
+              placeholder="••••••••"
+              value={authPassword}
+              onChange={(e) => onPasswordChange(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-2xl bg-revo-danger/10 p-4 text-center text-sm font-bold text-revo-danger">
+              {error}
+            </div>
+          )}
+
+          <button
+            className="revo-btn-primary w-full !py-4 shadow-lg shadow-revo-blue/20 mt-4"
+            type="submit"
+            disabled={isBusy}
+          >
+            {isBusy ? 'Вхід...' : 'Увійти'}
+          </button>
+        </form>
+        
+        <p className="mt-10 text-center text-xs font-bold text-revo-gray">
+          &copy; 2026 Finance Manager MVP
+        </p>
+      </div>
     </main>
   )
 }
