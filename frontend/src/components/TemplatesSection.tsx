@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import type { Template, TemplateFormState, TransactionType } from '../types'
-import { CATEGORY_EMOJIS } from '../App'
+import { CATEGORY_EMOJIS } from '../constants'
 
 type Props = {
   templateForm: TemplateFormState

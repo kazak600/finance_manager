@@ -3,10 +3,9 @@ type Props = {
   expense: number
   balance: number
   formatMoney: (value: number) => string
-  onCreateTransaction: () => void
 }
 
-export function BalanceCard({ income, expense, balance, formatMoney, onCreateTransaction }: Props) {
+export function BalanceCard({ income, expense, balance, formatMoney }: Props) {
   return (
     <div className="revo-card flex flex-col justify-between overflow-hidden !p-8 shadow-revo-md">
       <div>
@@ -16,26 +15,16 @@ export function BalanceCard({ income, expense, balance, formatMoney, onCreateTra
         </h2>
       </div>
 
-      <div className="mt-8 flex items-center justify-between">
-        <div className="flex gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase text-revo-success">Доходи</p>
-            <p className="text-lg font-bold text-revo-text">{formatMoney(income)}</p>
-          </div>
-          <div className="h-10 w-px bg-slate-100"></div>
-          <div>
-            <p className="text-[10px] font-bold uppercase text-revo-danger">Витрати</p>
-            <p className="text-lg font-bold text-revo-text">{formatMoney(expense)}</p>
-          </div>
+      <div className="mt-8 flex gap-6">
+        <div>
+          <p className="text-[10px] font-bold uppercase text-revo-success">Доходи</p>
+          <p className="text-lg font-bold text-revo-text">{formatMoney(income)}</p>
         </div>
-        
-        <button
-          onClick={onCreateTransaction}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-revo-blue text-2xl text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
-          title="Додати транзакцію"
-        >
-          +
-        </button>
+        <div className="h-10 w-px bg-slate-100"></div>
+        <div>
+          <p className="text-[10px] font-bold uppercase text-revo-danger">Витрати</p>
+          <p className="text-lg font-bold text-revo-text">{formatMoney(expense)}</p>
+        </div>
       </div>
     </div>
   )

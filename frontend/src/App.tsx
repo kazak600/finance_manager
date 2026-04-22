@@ -1,84 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { AddTransactionTab } from './components/AddTransactionTab'
+import { AnalyticsTab } from './components/AnalyticsTab'
 import { AuthForm } from './components/AuthForm'
 import { BalanceCard } from './components/BalanceCard'
+import { BottomNav } from './components/BottomNav'
+import type { Tab } from './components/BottomNav'
 import { CalendarGrid } from './components/CalendarGrid'
 import { DashboardHeader } from './components/DashboardHeader'
 import { DayTransactionsCard } from './components/DayTransactionsCard'
-import { MonthlyStatsCard } from './components/MonthlyStatsCard'
 import { TemplatesSection } from './components/TemplatesSection'
 import { TransactionModal } from './components/TransactionModal'
+import { CATEGORIES } from './constants'
 import type { BalanceResponse, MonthlyStats, Template, TemplateFormState, Transaction, TransactionFormState, User } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
-const CATEGORIES = [
-  'Їжа', 
-  'Кафе', 
-  'Ланч',
-  'Доставка їжі', 
-  'Транспорт', 
-  'Таксі',
-  'Авто', 
-  'Парковка', 
-  'Житло', 
-  'Комунальні платежі',
-  'Діти', 
-  'Комунікації', 
-  'Одяг', 
-  'Andele Mandele',
-  'Beauty',
-  'Здоров\'я', 
-  'Аптека', 
-  'Дім', 
-  'Миючі засоби',
-  'Підписки',
-  'Відпустка', 
-  'Спорт', 
-  'Заощадження',
-  'Розваги', 
-  'Подарунки', 
-  'Дохід', 
-  'Інше'
-]
-
-export const CATEGORY_EMOJIS: Record<string, string> = {
-  'Їжа': '🛒',
-  'Кафе': '☕',
-  'Ланч': '🍱',
-  'Доставка їжі': '🍕',
-  'Транспорт': '🚌',
-  'Таксі': '🚕',
-  'Авто': '🔧',
-  'Парковка': '🅿️',
-  'Житло': '🏠',
-  'Комунальні платежі': '🔌',
-  'Діти': '👶',
-  'Комунікації': '📱',
-  'Одяг': '👕',
-  'Andele Mandele': '👗',
-  'Beauty': '💄',
-  'Здоров\'я': '🏥',
-  'Аптека': '💊',
-  'Дім': '🖼️',
-  'Миючі засоби': '🧼',
-  'Підписки': '📺',
-  'Відпустка': '✈️',
-  'Спорт': '🏋️',
-  'Заощадження': '🏦',
-  'Розваги': '🎬',
-  'Подарунки': '🎁',
-  'Дохід': '💰',
-  'Інше': '📦'
-}
 
 const moneyFmt = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' })
 const dateFmt = new Intl.DateTimeFormat('lv-LV')
 const AUTH_TOKEN_KEY = 'fm_access_token'
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
-}
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 const monthIso = () => new Date().toISOString().slice(0, 7)
@@ -101,11 +41,9 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
     'Content-Type': 'application/json',
     ...(options?.headers ?? {}),
   })
-
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
   }
-
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers,
@@ -119,8 +57,27 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   return body as T
 }
 
+const EMPTY_ADD_FORM: TransactionFormState = {
+  id: null,
+  amount: '',
+  category: CATEGORIES[0],
+  date: todayIso(),
+  description: '',
+  type: 'expense',
+}
+
+const EMPTY_EDIT_FORM: TransactionFormState = {
+  id: null,
+  amount: '',
+  category: CATEGORIES[0],
+  date: todayIso(),
+  description: '',
+  type: 'expense',
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(null)
+  const [activeTab, setActiveTab] = useState<Tab>('home')
   const [month, setMonth] = useState(monthIso())
   const [selectedDate, setSelectedDate] = useState(todayIso())
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -130,20 +87,11 @@ function App() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [isBusy, setIsBusy] = useState(false)
   const [error, setError] = useState('')
-  const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
 
-  const [authEmail, setAuthEmail] = useState('')
-  const [authPassword, setAuthPassword] = useState('')
-
-  const [showTxModal, setShowTxModal] = useState(false)
-  const [txForm, setTxForm] = useState<TransactionFormState>({
-    id: null,
-    amount: '',
-    category: CATEGORIES[0],
-    date: todayIso(),
-    description: '',
-    type: 'expense',
-  })
+  // Separate state for add tab and edit modal
+  const [addDraft, setAddDraft] = useState<TransactionFormState>(EMPTY_ADD_FORM)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState<TransactionFormState>(EMPTY_EDIT_FORM)
 
   const [templateForm, setTemplateForm] = useState<TemplateFormState>({
     id: null,
@@ -155,6 +103,9 @@ function App() {
     dayOfMonth: '1',
     isActive: true,
   })
+
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
 
   const calendarMap = useMemo(() => {
     const map = new Map<string, { income: number; expense: number }>()
@@ -217,25 +168,6 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    const onBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault()
-      setInstallPromptEvent(event as BeforeInstallPromptEvent)
-    }
-
-    const onAppInstalled = () => {
-      setInstallPromptEvent(null)
-    }
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-    window.addEventListener('appinstalled', onAppInstalled)
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-      window.removeEventListener('appinstalled', onAppInstalled)
-    }
-  }, [])
-
   const refreshData = async (nextMonth = month, nextDate = selectedDate) => {
     const token = localStorage.getItem(AUTH_TOKEN_KEY)
     if (!user && !token) return
@@ -275,7 +207,6 @@ function App() {
 
   const logout = async () => {
     setIsBusy(true)
-    setError('')
     try {
       await apiRequest('/auth/logout', { method: 'POST' })
     } catch (err) {
@@ -292,20 +223,14 @@ function App() {
     }
   }
 
-  const openCreateTx = (date = selectedDate) => {
-    setTxForm({
-      id: null,
-      amount: '',
-      category: CATEGORIES[0],
-      date,
-      description: '',
-      type: 'expense',
-    })
-    setShowTxModal(true)
+  const openAddTab = (date = selectedDate) => {
+    setAddDraft({ ...EMPTY_ADD_FORM, date })
+    setError('')
+    setActiveTab('add')
   }
 
   const openEditTx = (tx: Transaction) => {
-    setTxForm({
+    setEditForm({
       id: tx.id,
       amount: String(tx.amount),
       category: tx.category,
@@ -313,37 +238,58 @@ function App() {
       description: tx.description ?? '',
       type: tx.type,
     })
-    setShowTxModal(true)
+    setShowEditModal(true)
   }
 
-  const submitTransaction = async (event: FormEvent) => {
+  const submitAdd = async (event: FormEvent) => {
     event.preventDefault()
     setIsBusy(true)
     setError('')
     try {
-      const payload = {
-        amount: Number(txForm.amount),
-        category: txForm.category,
-        date: txForm.date,
-        description: txForm.description || null,
-        type: txForm.type,
-      }
-      if (txForm.id) {
-        await apiRequest(`/transactions/${txForm.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        })
-      } else {
-        await apiRequest('/transactions', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        })
-      }
-      setShowTxModal(false)
-      const nextMonth = txForm.date.slice(0, 7)
+      await apiRequest('/transactions', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Number(addDraft.amount),
+          category: addDraft.category,
+          date: addDraft.date,
+          description: addDraft.description || null,
+          type: addDraft.type,
+        }),
+      })
+      const nextMonth = addDraft.date.slice(0, 7)
       setMonth(nextMonth)
-      setSelectedDate(txForm.date)
-      await refreshData(nextMonth, txForm.date)
+      setSelectedDate(addDraft.date)
+      setAddDraft(EMPTY_ADD_FORM)
+      await refreshData(nextMonth, addDraft.date)
+      setActiveTab('home')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save transaction')
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  const submitEdit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!editForm.id) return
+    setIsBusy(true)
+    setError('')
+    try {
+      await apiRequest(`/transactions/${editForm.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          amount: Number(editForm.amount),
+          category: editForm.category,
+          date: editForm.date,
+          description: editForm.description || null,
+          type: editForm.type,
+        }),
+      })
+      setShowEditModal(false)
+      const nextMonth = editForm.date.slice(0, 7)
+      setMonth(nextMonth)
+      setSelectedDate(editForm.date)
+      await refreshData(nextMonth, editForm.date)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save transaction')
     } finally {
@@ -352,13 +298,13 @@ function App() {
   }
 
   const deleteTransaction = async () => {
-    if (!txForm.id) return
+    if (!editForm.id) return
     if (!window.confirm('Видалити транзакцію?')) return
     setIsBusy(true)
     setError('')
     try {
-      await apiRequest(`/transactions/${txForm.id}`, { method: 'DELETE' })
-      setShowTxModal(false)
+      await apiRequest(`/transactions/${editForm.id}`, { method: 'DELETE' })
+      setShowEditModal(false)
       await refreshData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete transaction')
@@ -386,16 +332,7 @@ function App() {
       } else {
         await apiRequest('/templates', { method: 'POST', body: JSON.stringify(payload) })
       }
-      setTemplateForm({
-        id: null,
-        name: '',
-        amount: '',
-        category: CATEGORIES[0],
-        description: '',
-        type: 'expense',
-        dayOfMonth: '1',
-        isActive: true,
-      })
+      setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', dayOfMonth: '1', isActive: true })
       await refreshData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save template')
@@ -424,16 +361,7 @@ function App() {
     try {
       await apiRequest(`/templates/${templateId}`, { method: 'DELETE' })
       if (templateForm.id === templateId) {
-        setTemplateForm({
-          id: null,
-          name: '',
-          amount: '',
-          category: CATEGORIES[0],
-          description: '',
-          type: 'expense',
-          dayOfMonth: '1',
-          isActive: true,
-        })
+        setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', dayOfMonth: '1', isActive: true })
       }
       await refreshData()
     } catch (err) {
@@ -477,25 +405,17 @@ function App() {
     try {
       const range = monthRangeIso(month)
       const token = localStorage.getItem(AUTH_TOKEN_KEY)
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
       const response = await fetch(`${API_BASE}/export/csv?from=${range.from}&to=${range.to}`, {
         method: 'GET',
         credentials: 'include',
-        headers
+        headers,
       })
-
       if (!response.ok) {
         const body = await response.json().catch(() => ({}))
-        const message = typeof body.error === 'string' ? body.error : 'Failed to export CSV'
-        throw new Error(message)
+        throw new Error(typeof body.error === 'string' ? body.error : 'Failed to export CSV')
       }
-
       const blob = await response.blob()
       const contentDisposition = response.headers.get('Content-Disposition')
       const fileNameMatch = contentDisposition?.match(/filename="([^"]+)"/)
@@ -515,13 +435,6 @@ function App() {
     }
   }
 
-  const installPwa = async () => {
-    if (!installPromptEvent) return
-    await installPromptEvent.prompt()
-    await installPromptEvent.userChoice
-    setInstallPromptEvent(null)
-  }
-
   if (!user) {
     return (
       <AuthForm
@@ -536,105 +449,127 @@ function App() {
     )
   }
 
+  const showMonthPicker = activeTab === 'home' || activeTab === 'analytics'
+
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-8 md:px-6">
-      <DashboardHeader
-        email={user.email}
-        month={month}
-        onMonthChange={(nextMonth) => void changeMonth(nextMonth)}
-      />
-
-      {error && <p className="mb-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-revo-danger">{error}</p>}
-
-      <section className="mb-8 grid gap-6 md:grid-cols-2">
-        <BalanceCard
-          income={balance?.totals.income ?? 0}
-          expense={balance?.totals.expense ?? 0}
-          balance={balance?.totals.balance ?? 0}
-          formatMoney={(value) => moneyFmt.format(value)}
-          onCreateTransaction={() => openCreateTx()}
+    <div className="min-h-screen bg-revo-bg pb-20">
+      <div className="mx-auto max-w-5xl px-4 pt-8 md:px-6">
+        <DashboardHeader
+          email={user.email}
+          month={month}
+          showMonthPicker={showMonthPicker}
+          onMonthChange={(nextMonth) => void changeMonth(nextMonth)}
         />
-        <MonthlyStatsCard 
-          stats={stats} 
-          fallbackMonth={month} 
-          formatMoney={(value) => moneyFmt.format(value)} 
-        />
-      </section>
 
-      <div className="grid gap-8 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <CalendarGrid
-            calendarDays={calendarDays}
-            calendarMap={calendarMap}
-            selectedDate={selectedDate}
-            onPickDay={(date) => void pickDay(date)}
-          />
-        </div>
-        <div className="lg:col-span-5">
-          <DayTransactionsCard
-            selectedDate={selectedDate}
-            dayTransactions={dayTransactions}
-            onCreateTransaction={() => openCreateTx(selectedDate)}
-            onEditTransaction={openEditTx}
-            formatMoney={(value) => moneyFmt.format(value)}
-            formatDate={(value) => dateFmt.format(value)}
-          />
-        </div>
+        {error && (
+          <p className="mb-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-revo-danger">{error}</p>
+        )}
       </div>
 
-      <TemplatesSection
-        templateForm={templateForm}
-        templates={templates}
-        categories={CATEGORIES}
-        onTemplateFormChange={setTemplateForm}
-        onSubmit={submitTemplate}
-        onCreateFromTemplate={(templateId) => void createFromTemplate(templateId)}
-        onEditTemplate={editTemplate}
-        onDeleteTemplate={(templateId) => void deleteTemplate(templateId)}
-        formatMoney={(value) => moneyFmt.format(value)}
-      />
+      {activeTab === 'home' && (
+        <div className="mx-auto max-w-5xl px-4 md:px-6">
+          <section className="mb-8">
+            <BalanceCard
+              income={balance?.totals.income ?? 0}
+              expense={balance?.totals.expense ?? 0}
+              balance={balance?.totals.balance ?? 0}
+              formatMoney={(value) => moneyFmt.format(value)}
+            />
+          </section>
 
-      <section className="mt-16 flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 pt-10 pb-16">
-        {installPromptEvent && (
-          <button
-            onClick={() => void installPwa()}
-            className="revo-btn-secondary !py-2 !text-xs !px-5"
-          >
-            Встановити додаток
-          </button>
-        )}
-        
-        <button
-          onClick={() => void exportCsv()}
-          className="revo-btn-secondary !py-2 !text-xs !px-5"
-        >
-          Експорт CSV
-        </button>
-        
-        <button
-          onClick={() => void logout()}
-          className="rounded-full bg-slate-900 px-6 py-2 text-xs font-black uppercase tracking-widest text-white transition-colors hover:bg-black"
-        >
-          Вийти
-        </button>
-      </section>
+          <div className="grid gap-8 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <CalendarGrid
+                calendarDays={calendarDays}
+                calendarMap={calendarMap}
+                selectedDate={selectedDate}
+                onPickDay={(date) => void pickDay(date)}
+              />
+            </div>
+            <div className="lg:col-span-5">
+              <DayTransactionsCard
+                selectedDate={selectedDate}
+                dayTransactions={dayTransactions}
+                onCreateTransaction={() => openAddTab(selectedDate)}
+                onEditTransaction={openEditTx}
+                formatMoney={(value) => moneyFmt.format(value)}
+                formatDate={(value) => dateFmt.format(value)}
+              />
+            </div>
+          </div>
 
-      <TransactionModal
-        show={showTxModal}
-        txForm={txForm}
-        categories={CATEGORIES}
-        onClose={() => setShowTxModal(false)}
-        onSubmit={submitTransaction}
-        onDelete={() => void deleteTransaction()}
-        onTxFormChange={setTxForm}
-      />
-
-      {isBusy && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-900 px-6 py-2 text-sm font-medium text-white shadow-lg transition-all">
-          Оновлення даних...
+          <section className="mt-16 flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 pb-4 pt-10">
+            <button
+              onClick={() => void exportCsv()}
+              className="revo-btn-secondary !px-5 !py-2 !text-xs"
+            >
+              Експорт CSV
+            </button>
+            <button
+              onClick={() => void logout()}
+              className="rounded-full bg-slate-900 px-6 py-2 text-xs font-black uppercase tracking-widest text-white transition-colors hover:bg-black"
+            >
+              Вийти
+            </button>
+          </section>
         </div>
       )}
-    </main>
+
+      {activeTab === 'add' && (
+        <AddTransactionTab
+          form={addDraft}
+          categories={CATEGORIES}
+          isBusy={isBusy}
+          error={error}
+          onFormChange={setAddDraft}
+          onSubmit={submitAdd}
+        />
+      )}
+
+      {activeTab === 'templates' && (
+        <div className="mx-auto max-w-5xl px-4 md:px-6">
+          <TemplatesSection
+            templateForm={templateForm}
+            templates={templates}
+            categories={CATEGORIES}
+            onTemplateFormChange={setTemplateForm}
+            onSubmit={submitTemplate}
+            onCreateFromTemplate={(templateId) => void createFromTemplate(templateId)}
+            onEditTemplate={editTemplate}
+            onDeleteTemplate={(templateId) => void deleteTemplate(templateId)}
+            formatMoney={(value) => moneyFmt.format(value)}
+          />
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <AnalyticsTab
+          stats={stats}
+          month={month}
+          transactions={transactions}
+          formatMoney={(value) => moneyFmt.format(value)}
+          formatDate={(value) => dateFmt.format(value)}
+        />
+      )}
+
+      <TransactionModal
+        show={showEditModal}
+        txForm={editForm}
+        categories={CATEGORIES}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={submitEdit}
+        onDelete={() => void deleteTransaction()}
+        onTxFormChange={setEditForm}
+      />
+
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {isBusy && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-slate-900 px-6 py-2 text-sm font-medium text-white shadow-lg">
+          Оновлення...
+        </div>
+      )}
+    </div>
   )
 }
 

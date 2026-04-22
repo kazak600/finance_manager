@@ -1,5 +1,5 @@
 import type { MonthlyStats } from '../types'
-import { CATEGORY_EMOJIS } from '../App'
+import { CATEGORY_EMOJIS } from '../constants'
 
 type Props = {
   stats: MonthlyStats | null
