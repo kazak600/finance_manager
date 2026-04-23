@@ -384,7 +384,7 @@ const parseAndValidateRecurringTemplatePayload = (
   const amount = body?.amount
   const category = body?.category?.trim()
   const type = body?.type
-  const dayOfMonth = body?.dayOfMonth
+  const dayOfMonth = typeof body?.dayOfMonth === 'number' ? body.dayOfMonth : 1
   const isActive = body?.isActive ?? true
   const descriptionRaw = typeof body?.description === 'string' ? body.description.trim() : null
   const description = descriptionRaw ? descriptionRaw.slice(0, 500) : null
@@ -1052,7 +1052,7 @@ app.post('/templates/:id/create-transaction', async (c) => {
       template.amount,
       template.category,
       dateTs,
-      template.description,
+      template.name,
       template.type,
     )
     .run()

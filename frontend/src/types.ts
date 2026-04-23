@@ -39,7 +39,6 @@ export type Template = {
   category: string
   description: string | null
   type: TransactionType
-  dayOfMonth: number
   isActive: boolean
 }
 
@@ -59,6 +58,5 @@ export type TemplateFormState = {
   category: string
   description: string
   type: TransactionType
-  dayOfMonth: string
   isActive: boolean
 }

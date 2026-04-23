@@ -53,20 +53,6 @@ export function TemplatesSection({
           />
         </div>
         <div>
-           <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-revo-gray">День</label>
-           <input
-            className="revo-input font-bold"
-            type="number"
-            min={1}
-            max={31}
-            placeholder="День"
-            value={templateForm.dayOfMonth}
-            onChange={(e) => onTemplateFormChange((prev) => ({ ...prev, dayOfMonth: e.target.value }))}
-            required
-          />
-        </div>
-        
-        <div className="sm:col-span-2">
           <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-revo-gray">Категорія</label>
           <select
             className="revo-input font-bold"
@@ -124,7 +110,7 @@ export function TemplatesSection({
                     {template.name}
                   </p>
                   <p className="text-xs font-bold text-revo-gray uppercase tracking-wider">
-                    {template.category} • {formatMoney(template.amount)} • день {template.dayOfMonth}
+                    {template.category} • {formatMoney(template.amount)}
                   </p>
                 </div>
               </div>

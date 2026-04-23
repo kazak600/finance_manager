@@ -100,7 +100,6 @@ function App() {
     category: CATEGORIES[0],
     description: '',
     type: 'expense',
-    dayOfMonth: '1',
     isActive: true,
   })
 
@@ -324,7 +323,6 @@ function App() {
         category: templateForm.category,
         description: templateForm.description || null,
         type: templateForm.type,
-        dayOfMonth: Number(templateForm.dayOfMonth),
         isActive: templateForm.isActive,
       }
       if (templateForm.id) {
@@ -332,7 +330,7 @@ function App() {
       } else {
         await apiRequest('/templates', { method: 'POST', body: JSON.stringify(payload) })
       }
-      setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', dayOfMonth: '1', isActive: true })
+      setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', isActive: true })
       await refreshData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save template')
@@ -349,7 +347,6 @@ function App() {
       category: template.category,
       description: template.description ?? '',
       type: template.type,
-      dayOfMonth: String(template.dayOfMonth),
       isActive: template.isActive,
     })
   }
@@ -361,7 +358,7 @@ function App() {
     try {
       await apiRequest(`/templates/${templateId}`, { method: 'DELETE' })
       if (templateForm.id === templateId) {
-        setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', dayOfMonth: '1', isActive: true })
+        setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', isActive: true })
       }
       await refreshData()
     } catch (err) {
@@ -375,10 +372,7 @@ function App() {
     setIsBusy(true)
     setError('')
     try {
-      await apiRequest(`/templates/${templateId}/create-transaction`, {
-        method: 'POST',
-        body: JSON.stringify({ date: selectedDate }),
-      })
+      await apiRequest(`/templates/${templateId}/create-transaction`, { method: 'POST' })
       await refreshData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create transaction from template')
