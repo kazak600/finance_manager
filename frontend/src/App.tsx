@@ -12,7 +12,7 @@ import { DayTransactionsCard } from './components/DayTransactionsCard'
 import { TemplatesSection } from './components/TemplatesSection'
 import { TransactionModal } from './components/TransactionModal'
 import { CATEGORIES } from './constants'
-import type { BalanceResponse, MonthlyStats, Template, TemplateFormState, Transaction, TransactionFormState, User } from './types'
+import type { MonthlyStats, Template, TemplateFormState, Transaction, TransactionFormState, User } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
@@ -83,7 +83,6 @@ function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [dayTransactions, setDayTransactions] = useState<Transaction[]>([])
   const [stats, setStats] = useState<MonthlyStats | null>(null)
-  const [balance, setBalance] = useState<BalanceResponse | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [isBusy, setIsBusy] = useState(false)
   const [error, setError] = useState('')
@@ -133,17 +132,15 @@ function App() {
   }, [month])
 
   const loadDashboard = async (targetMonth: string, targetDate: string) => {
-    const [txRes, dayRes, statsRes, balanceRes, templatesRes] = await Promise.all([
+    const [txRes, dayRes, statsRes, templatesRes] = await Promise.all([
       apiRequest<{ transactions: Transaction[] }>(`/transactions?month=${targetMonth}`),
       apiRequest<{ transactions: Transaction[] }>(`/transactions/day?date=${targetDate}`),
       apiRequest<MonthlyStats>(`/stats/month?month=${targetMonth}`),
-      apiRequest<BalanceResponse>('/stats/balance'),
       apiRequest<{ templates: Template[] }>('/templates'),
     ])
     setTransactions(txRes.transactions)
     setDayTransactions(dayRes.transactions)
     setStats(statsRes)
-    setBalance(balanceRes)
     setTemplates(templatesRes.templates)
   }
 
@@ -216,7 +213,6 @@ function App() {
       setTransactions([])
       setDayTransactions([])
       setStats(null)
-      setBalance(null)
       setTemplates([])
       setIsBusy(false)
     }
@@ -464,9 +460,9 @@ function App() {
         <div className="mx-auto max-w-5xl px-4 md:px-6">
           <section className="mb-8">
             <BalanceCard
-              income={balance?.totals.income ?? 0}
-              expense={balance?.totals.expense ?? 0}
-              balance={balance?.totals.balance ?? 0}
+              income={stats?.totals.income ?? 0}
+              expense={stats?.totals.expense ?? 0}
+              balance={stats?.totals.balance ?? 0}
               formatMoney={(value) => moneyFmt.format(value)}
             />
           </section>
