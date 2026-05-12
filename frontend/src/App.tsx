@@ -78,11 +78,13 @@ const EMPTY_EDIT_FORM: TransactionFormState = {
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('home')
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'month' | 'year'>('month')
   const [month, setMonth] = useState(monthIso())
   const [selectedDate, setSelectedDate] = useState(todayIso())
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [dayTransactions, setDayTransactions] = useState<Transaction[]>([])
   const [stats, setStats] = useState<MonthlyStats | null>(null)
+  const [yearlyStats, setYearlyStats] = useState<MonthlyStats | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [isBusy, setIsBusy] = useState(false)
   const [error, setError] = useState('')
@@ -132,16 +134,19 @@ function App() {
   }, [month])
 
   const loadDashboard = async (targetMonth: string, targetDate: string) => {
-    const [txRes, dayRes, statsRes, templatesRes] = await Promise.all([
+    const currentYear = new Date().getFullYear().toString()
+    const [txRes, dayRes, statsRes, templatesRes, yearlyStatsRes] = await Promise.all([
       apiRequest<{ transactions: Transaction[] }>(`/transactions?month=${targetMonth}`),
       apiRequest<{ transactions: Transaction[] }>(`/transactions/day?date=${targetDate}`),
       apiRequest<MonthlyStats>(`/stats/month?month=${targetMonth}`),
       apiRequest<{ templates: Template[] }>('/templates'),
+      apiRequest<MonthlyStats>(`/stats/year?year=${currentYear}`),
     ])
     setTransactions(txRes.transactions)
     setDayTransactions(dayRes.transactions)
     setStats(statsRes)
     setTemplates(templatesRes.templates)
+    setYearlyStats(yearlyStatsRes)
   }
 
   const bootstrap = async () => {
@@ -534,9 +539,11 @@ function App() {
 
       {activeTab === 'analytics' && (
         <AnalyticsTab
-          stats={stats}
+          stats={analyticsPeriod === 'month' ? stats : yearlyStats}
           month={month}
           transactions={transactions}
+          period={analyticsPeriod}
+          onPeriodChange={setAnalyticsPeriod}
           formatMoney={(value) => moneyFmt.format(value)}
           formatDate={(value) => dateFmt.format(value)}
         />

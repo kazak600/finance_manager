@@ -317,6 +317,23 @@ const parseMonthToRange = (month: string): { startTs: number; endTs: number } | 
   }
 }
 
+const parseYearToRange = (yearStr: string): { startTs: number; endTs: number } | null => {
+  if (!/^\d{4}$/.test(yearStr)) {
+    return null
+  }
+  const year = Number(yearStr)
+  if (!Number.isInteger(year)) {
+    return null
+  }
+
+  const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0))
+  const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0))
+  return {
+    startTs: Math.floor(start.getTime() / 1000),
+    endTs: Math.floor(end.getTime() / 1000),
+  }
+}
+
 const serializeTransaction = (tx: TransactionRecord) => ({
   id: tx.id,
   userId: tx.user_id,
@@ -601,6 +618,34 @@ app.get('/transactions', async (c) => {
   })
 })
 
+app.get('/transactions/year', async (c) => {
+  const userId = c.get('userId')
+  const year = c.req.query('year')
+  if (!year) {
+    return c.json({ error: 'Query param "year" is required (YYYY).' }, 400)
+  }
+
+  const range = parseYearToRange(year)
+  if (!range) {
+    return c.json({ error: 'Invalid "year" format. Use YYYY.' }, 400)
+  }
+
+  const rows = await c.env.DB.prepare(
+    `
+      SELECT id, user_id, amount, category, date_ts, description, type, created_at, updated_at
+      FROM transactions
+      WHERE user_id = ? AND date_ts >= ? AND date_ts < ?
+      ORDER BY date_ts ASC, created_at ASC
+    `,
+  )
+    .bind(userId, range.startTs, range.endTs)
+    .all<TransactionRecord>()
+
+  return c.json({
+    transactions: (rows.results ?? []).map(serializeTransaction),
+  })
+})
+
 app.get('/transactions/day', async (c) => {
   const userId = c.get('userId')
   const date = c.req.query('date')
@@ -780,6 +825,60 @@ app.get('/stats/month', async (c) => {
 
   return c.json({
     month,
+    totals: {
+      income: totalIncome,
+      expense: totalExpense,
+      balance: totalIncome - totalExpense,
+    },
+    categories: (categoryRows.results ?? []).map((row) => ({
+      category: row.category,
+      type: row.type,
+      total: row.total ?? 0,
+    })),
+  })
+})
+
+app.get('/stats/year', async (c) => {
+  const userId = c.get('userId')
+  const year = c.req.query('year')
+  if (!year) {
+    return c.json({ error: 'Query param "year" is required (YYYY).' }, 400)
+  }
+
+  const range = parseYearToRange(year)
+  if (!range) {
+    return c.json({ error: 'Invalid "year" format. Use YYYY.' }, 400)
+  }
+
+  const categoryRows = await c.env.DB.prepare(
+    `
+      SELECT category, type, SUM(amount) AS total
+      FROM transactions
+      WHERE user_id = ? AND date_ts >= ? AND date_ts < ?
+      GROUP BY category, type
+      ORDER BY total DESC, category ASC
+    `,
+  )
+    .bind(userId, range.startTs, range.endTs)
+    .all<CategoryStatRow>()
+
+  const summary = await c.env.DB.prepare(
+    `
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
+        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
+      FROM transactions
+      WHERE user_id = ? AND date_ts >= ? AND date_ts < ?
+    `,
+  )
+    .bind(userId, range.startTs, range.endTs)
+    .first<BalanceRow>()
+
+  const totalIncome = summary?.total_income ?? 0
+  const totalExpense = summary?.total_expense ?? 0
+
+  return c.json({
+    year,
     totals: {
       income: totalIncome,
       expense: totalExpense,
