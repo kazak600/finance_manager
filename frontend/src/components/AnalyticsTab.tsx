@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { MonthlyStats, Transaction, TransactionType } from '../types'
+import type { MonthlyStats, Transaction } from '../types'
+import { TransactionType } from '../types'
 import { CATEGORY_EMOJIS } from '../constants'
 
 type DrillDown = { category: string; type: TransactionType } | null
@@ -29,7 +30,7 @@ export function AnalyticsTab({
     setDrillDown(null)
   }, [month, period])
 
-  const categories = (stats?.categories ?? []).filter((c) => c.type === 'expense')
+  const categories = (stats?.categories ?? []).filter((c) => c.type === TransactionType.Expense)
   const totalExpenses = categories.reduce((sum, c) => sum + c.total, 0)
 
   if (drillDown) {

@@ -1,4 +1,5 @@
-import type { TransactionFormState, TransactionType } from '../types'
+import type { TransactionFormState } from '../types'
+import { TransactionType } from '../types'
 import { CATEGORY_EMOJIS } from '../constants'
 
 type Props = {
@@ -36,12 +37,12 @@ export function TransactionForm({ form, categories, onChange, autoFocus = false 
               onChange((prev) => ({
                 ...prev,
                 type: newType,
-                category: newType === 'income' ? 'Дохід' : prev.category,
+                category: newType === TransactionType.Income ? 'Дохід' : prev.category,
               }))
             }}
           >
-            <option value="expense">Витрата</option>
-            <option value="income">Дохід</option>
+            <option value={TransactionType.Expense}>Витрата</option>
+            <option value={TransactionType.Income}>Дохід</option>
           </select>
         </div>
         <div>

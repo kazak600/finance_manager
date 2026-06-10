@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
-import type { Template, TemplateFormState, TransactionType } from '../types'
+import type { Template, TemplateFormState } from '../types'
+import { TransactionType } from '../types'
 import { CATEGORY_EMOJIS } from '../constants'
 
 type Props = {
@@ -74,8 +75,8 @@ export function TemplatesSection({
             value={templateForm.type}
             onChange={(e) => onTemplateFormChange((prev) => ({ ...prev, type: e.target.value as TransactionType }))}
           >
-            <option value="expense">Витрата</option>
-            <option value="income">Дохід</option>
+            <option value={TransactionType.Expense}>Витрата</option>
+            <option value={TransactionType.Income}>Дохід</option>
           </select>
         </div>
         

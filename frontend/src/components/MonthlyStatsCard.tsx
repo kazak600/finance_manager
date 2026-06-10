@@ -1,4 +1,5 @@
 import type { MonthlyStats } from '../types'
+import { TransactionType } from '../types'
 import { CATEGORY_EMOJIS } from '../constants'
 
 type Props = {
@@ -37,7 +38,7 @@ export function MonthlyStatsCard({ stats, fallbackMonth, formatMoney }: Props) {
                   </div>
                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                     <div 
-                      className={`h-full rounded-full ${item.type === 'income' ? 'bg-revo-success' : 'bg-revo-blue'}`}
+                      className={`h-full rounded-full ${item.type === TransactionType.Income ? 'bg-revo-success' : 'bg-revo-blue'}`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>

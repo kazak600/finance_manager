@@ -13,6 +13,7 @@ import { TemplatesSection } from './components/TemplatesSection'
 import { TransactionModal } from './components/TransactionModal'
 import { CATEGORIES } from './constants'
 import type { MonthlyStats, Template, TemplateFormState, Transaction, TransactionFormState, User } from './types'
+import { TransactionType } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
@@ -63,7 +64,7 @@ const EMPTY_ADD_FORM: TransactionFormState = {
   category: CATEGORIES[0],
   date: todayIso(),
   description: '',
-  type: 'expense',
+  type: TransactionType.Expense,
 }
 
 const EMPTY_EDIT_FORM: TransactionFormState = {
@@ -72,7 +73,7 @@ const EMPTY_EDIT_FORM: TransactionFormState = {
   category: CATEGORIES[0],
   date: todayIso(),
   description: '',
-  type: 'expense',
+  type: TransactionType.Expense,
 }
 
 function App() {
@@ -112,7 +113,7 @@ function App() {
     for (const tx of transactions) {
       const date = toIsoDate(tx.dateTs)
       const current = map.get(date) ?? { income: 0, expense: 0 }
-      if (tx.type === 'income') {
+      if (tx.type === TransactionType.Income) {
         current.income += tx.amount
       } else {
         current.expense += tx.amount
@@ -331,7 +332,7 @@ function App() {
       } else {
         await apiRequest('/templates', { method: 'POST', body: JSON.stringify(payload) })
       }
-      setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', isActive: true })
+      setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: TransactionType.Expense, isActive: true })
       await refreshData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save template')
@@ -359,7 +360,7 @@ function App() {
     try {
       await apiRequest(`/templates/${templateId}`, { method: 'DELETE' })
       if (templateForm.id === templateId) {
-        setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: 'expense', isActive: true })
+        setTemplateForm({ id: null, name: '', amount: '', category: CATEGORIES[0], description: '', type: TransactionType.Expense, isActive: true })
       }
       await refreshData()
     } catch (err) {

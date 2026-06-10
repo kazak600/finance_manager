@@ -1,4 +1,5 @@
 import type { Transaction } from '../types'
+import { TransactionType } from '../types'
 import { CATEGORY_EMOJIS } from '../constants'
 
 type Props = {
@@ -18,21 +19,34 @@ export function DayTransactionsCard({
   formatMoney,
   formatDate,
 }: Props) {
+  const totalExpense = dayTransactions
+    .filter((tx) => tx.type === TransactionType.Expense)
+    .reduce((sum, tx) => sum + tx.amount, 0)
+
   return (
     <article className="revo-card lg:col-span-5 h-full flex flex-col">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-bold tracking-tight text-revo-text">Виписка</h2>
-        <button 
-          className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-revo-blue hover:bg-slate-200 transition-colors" 
+        <button
+          className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-revo-blue hover:bg-slate-200 transition-colors"
           onClick={onCreateTransaction}
         >
           Додати
         </button>
       </div>
-      
-      <p className="mb-6 text-xs font-bold uppercase tracking-wider text-revo-gray">
-        {formatDate(new Date(selectedDate))}
-      </p>
+
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-revo-gray">
+          {formatDate(new Date(selectedDate))}
+        </p>
+        {totalExpense > 0 && (
+          <div className="flex items-center gap-3 text-sm font-black tracking-tight">
+            {totalExpense > 0 && (
+              <span className="text-revo-text">-{formatMoney(totalExpense)}</span>
+            )}
+          </div>
+        )}
+      </div>
       
       <div className="flex-1 overflow-y-auto pr-1">
         <ul className="space-y-6">
@@ -55,9 +69,9 @@ export function DayTransactionsCard({
                   </div>
                   <div className="text-right">
                     <p className={`text-lg font-black tracking-tight ${
-                      tx.type === 'income' ? 'text-revo-success' : 'text-revo-text'
+                      tx.type === TransactionType.Income ? 'text-revo-success' : 'text-revo-text'
                     }`}>
-                      {tx.type === 'income' ? '+' : ''}
+                      {tx.type === TransactionType.Income ? '+' : ''}
                       {formatMoney(tx.amount)}
                     </p>
                   </div>

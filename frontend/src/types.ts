@@ -1,4 +1,9 @@
-export type TransactionType = 'expense' | 'income'
+export const TransactionType = {
+  Expense: 'expense',
+  Income: 'income',
+} as const
+
+export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType]
 
 export type User = {
   id: number
